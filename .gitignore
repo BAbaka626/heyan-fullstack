@@ -1,0 +1,61 @@
+server/node_modules/
+server/data/
+android-app/.gradle/
+android-app/local.properties
+android-app/app/build/
+android-app/build/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node backend
+node_modules/
+server/node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Android / Gradle
+local.properties
+.gradle/
+build/
+app/build/
+*/build/
+*.jks
+*.keystore
+
+# Nested git backup
+.git_backup/
+**/.git_backup/
+
+# Release files and compressed packages
+*.apk
+*.aab
+*.rar
+*.zip
+*.7z
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Root temporary files
+/*.png
+/*.jpg
+/*.jpeg
+/*.doc
+/*.docx
+/*.xlsx
+
+# Old or backup Android project
+/android-app/

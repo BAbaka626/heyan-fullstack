@@ -1,0 +1,19 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: heyan-server
+    network_mode: bridge
+    ports:
+      - "3100:3100"
+    environment:
+      PORT: 3100
+      DB_PATH: /app/server/data/chemical_ai.db
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      FORCE_BOOTSTRAP: ${FORCE_BOOTSTRAP:-0}
+    volumes:
+      - ./server/data:/app/server/data
+    restart: unless-stopped

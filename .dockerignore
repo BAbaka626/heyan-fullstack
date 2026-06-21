@@ -1,0 +1,5 @@
+.git
+.DS_Store
+android-app
+server/node_modules
+server/data
