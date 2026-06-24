@@ -1,5 +1,7 @@
 package work.xy0712.xz.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class EnterpriseSummary(
     val id: String = "",
     val name: String = "",
@@ -13,7 +15,19 @@ data class EnterpriseSummary(
     val employee_count: Int = 0,
     val hazard_level: String = "",
     val evaluation_level: String = "",
-    val is_chemical_enterprise: Int = 0
+    val is_chemical_enterprise: Int = 0,
+    @SerializedName(value = "QYFXDJ", alternate = ["qyfxdj"])
+    val qyfxdj: Int? = null,
+    val computedRiskLevel: String = "",
+    val computedRiskLabel: String = "",
+    val computedRiskColor: String = "",
+    val computedRiskWeight: Int = 0,
+    val riskReason: String = "",
+    val riskLevel: String = "",
+    val risk_level: String = "",
+    val riskColor: String = "",
+    val doublePreventionScore: Double? = null,
+    val doublePreventionEffectLevel: String = ""
 )
 
 data class PersonRecord(

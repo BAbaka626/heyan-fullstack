@@ -420,11 +420,11 @@ function importEnterpriseWorkbook(db, rootDir) {
   const enterpriseInsert = db.prepare(`
     INSERT OR REPLACE INTO enterprises (
       id, name, code, social_credit_code, park_name, address, legal_person, safety_leader,
-      business_scope, employee_count, hazard_level, evaluation_level, is_chemical_enterprise,
+      business_scope, employee_count, hazard_level, evaluation_level, qyfxdj, is_chemical_enterprise,
       is_run_prevention, is_run_mechanism, source_sheet
     ) VALUES (
       @id, @name, @code, @social_credit_code, @park_name, @address, @legal_person, @safety_leader,
-      @business_scope, @employee_count, @hazard_level, @evaluation_level, @is_chemical_enterprise,
+      @business_scope, @employee_count, @hazard_level, @evaluation_level, @qyfxdj, @is_chemical_enterprise,
       @is_run_prevention, @is_run_mechanism, @source_sheet
     )
   `);
@@ -440,8 +440,9 @@ function importEnterpriseWorkbook(db, rootDir) {
       safety_leader: row.AQFZR || "",
       business_scope: row.JYFW || row.YYZZJJFW || "",
       employee_count: Number(row.CYRYSL || row.PEOPLE_EMPLOYEE || 0) || 0,
-      hazard_level: row.QYFXDJ || "",
+      hazard_level: row.HAZARD_LEVEL || "",
       evaluation_level: row.EVALUATION_LEVEL || "",
+      qyfxdj: Number(row.QYFXDJ || row.qyfxdj || 0) || null,
       is_chemical_enterprise: Number(row.is_chemical_enterprise || 0) || 0,
       is_run_prevention: Number(row.is_run_prevention || 0) || 0,
       is_run_mechanism: Number(row.is_run_mechanism || 0) || 0,

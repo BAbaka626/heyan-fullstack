@@ -67,6 +67,7 @@ function initSchema(db) {
       employee_count INTEGER,
       hazard_level TEXT,
       evaluation_level TEXT,
+      qyfxdj INTEGER,
       is_chemical_enterprise INTEGER,
       is_run_prevention INTEGER,
       is_run_mechanism INTEGER,

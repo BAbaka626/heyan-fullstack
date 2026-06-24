@@ -3,6 +3,7 @@ package work.xy0712.xz.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(
@@ -11,6 +12,7 @@ sealed class Screen(
     val icon: ImageVector? = null
 ) {
     data object Chat : Screen("chat", "智控助手", Icons.Default.Chat)
+    data object ParkOverview : Screen("park_overview", "园区总览", Icons.Default.Dashboard)
     data object Enterprise : Screen("enterprise", "企业检索", Icons.AutoMirrored.Filled.List)
 
     data object EnterpriseDetail : Screen("enterprise_detail/{enterpriseId}", "企业详情")
@@ -21,7 +23,7 @@ sealed class Screen(
     data object ReportDetail : Screen("report_detail/{reportType}?title={title}", "报告详情")
 
     companion object {
-        val bottomNavItems = listOf(Chat, Enterprise)
+        val bottomNavItems = listOf(Chat, ParkOverview, Enterprise)
 
         fun enterpriseDetailRoute(enterpriseId: String) = "enterprise_detail/$enterpriseId"
         fun issueFormRoute(enterpriseName: String, enterpriseId: String = ""): String {

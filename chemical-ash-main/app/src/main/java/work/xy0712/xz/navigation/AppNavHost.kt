@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import work.xy0712.xz.ui.chat.ChatScreen
 import work.xy0712.xz.ui.enterprise.EnterpriseScreen
+import work.xy0712.xz.ui.enterprise.ParkOverviewScreen
 import work.xy0712.xz.ui.enterprise.detail.EnterpriseDetailScreen
 import work.xy0712.xz.ui.enterprise.disposal.InspectionRecordsScreen
 import work.xy0712.xz.ui.enterprise.disposal.InspectionRoutesScreen
@@ -26,6 +27,9 @@ fun AppNavHost(
     ) {
         composable(Screen.Chat.route) {
             ChatScreen()
+        }
+        composable(Screen.ParkOverview.route) {
+            ParkOverviewScreen()
         }
         composable(Screen.Enterprise.route) {
             EnterpriseScreen(

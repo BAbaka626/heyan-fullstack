@@ -1,6 +1,7 @@
 package work.xy0712.xz.ui.chat
 
 import android.view.ViewGroup
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
@@ -67,6 +68,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import kotlinx.coroutines.launch
 import work.xy0712.xz.data.model.AskChart
 import work.xy0712.xz.data.model.ChatSession
@@ -794,23 +796,31 @@ fun HazardPieChart(chartTitle: String, chartData: Any?) {
 
 @Composable
 fun HazardRiskMap(chartTitle: String, chartData: Any?) {
+    var selectedRiskPoint by remember { mutableStateOf<RiskPointDialogData?>(null) }
     val jsonData = remember(chartData) {
         runCatching { Gson().toJson(chartData ?: fallbackParkRiskPoints()) }
             .getOrDefault(Gson().toJson(fallbackParkRiskPoints()))
     }
 
-    AndroidView(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp),
-        factory = { context ->
-            WebView(context).apply {
+    Column {
+        AndroidView(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp),
+            factory = { context ->
+                WebView(context).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
                 settings.javaScriptEnabled = true
                 webViewClient = WebViewClient()
+                addJavascriptInterface(
+                    RiskPointBridge { payload ->
+                        post { selectedRiskPoint = parseRiskPoint(payload) }
+                    },
+                    "AndroidRiskBridge"
+                )
 
                 val htmlContent = """
                     <html>
@@ -926,6 +936,11 @@ fun HazardRiskMap(chartTitle: String, chartData: Any?) {
                                 }]
                             };
                             myChart.setOption(option);
+                            myChart.on('click', function(params) {
+                                if (params.seriesType === 'scatter' && window.AndroidRiskBridge) {
+                                    window.AndroidRiskBridge.showRiskPoint(JSON.stringify(params.data || {}));
+                                }
+                            });
                         </script>
                     </body>
                     </html>
@@ -933,6 +948,78 @@ fun HazardRiskMap(chartTitle: String, chartData: Any?) {
 
                 loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
             }
+        })
+    }
+
+    selectedRiskPoint?.let { point ->
+        AlertDialog(
+            onDismissRequest = { selectedRiskPoint = null },
+            title = { Text(point.name) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    RiskPointInfoLine("风险等级", point.riskLevel)
+                    RiskPointInfoLine("区域位置", point.area)
+                    RiskPointInfoLine("风险描述", point.riskDescription)
+                    RiskPointInfoLine("管控建议", point.controlSuggestion)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedRiskPoint = null }) { Text("关闭") }
+            }
+        )
+    }
+}
+
+private data class RiskPointDialogData(
+    val name: String,
+    val riskLevel: String,
+    val area: String,
+    val riskDescription: String,
+    val controlSuggestion: String
+)
+
+private class RiskPointBridge(private val onRiskPointClick: (String) -> Unit) {
+    @JavascriptInterface
+    fun showRiskPoint(payload: String) {
+        onRiskPointClick(payload)
+    }
+}
+
+private fun parseRiskPoint(payload: String): RiskPointDialogData {
+    return runCatching {
+        val data = JsonParser.parseString(payload).asJsonObject
+        val name = data.get("name")?.asString.orEmpty().ifBlank { "未命名风险点" }
+        val coordinates = data.getAsJsonArray("value")
+        val area = data.get("area")?.asString
+            ?: coordinates?.let {
+                val x = if (it.size() > 0) it[0].asString else "-"
+                val y = if (it.size() > 1) it[1].asString else "-"
+                "园区网格 X=${x}m，Y=${y}m"
+            }
+            ?: "位置待补充"
+        val level = data.get("riskLevel")?.asString ?: when {
+            name.contains("一级") || name.contains("红") -> "极高风险"
+            name.contains("二级") || name.contains("橙") -> "高风险"
+            name.contains("三级") || name.contains("黄") -> "中风险"
+            name.contains("四级") || name.contains("蓝") -> "低风险"
+            else -> "待评估"
         }
-    )
+        RiskPointDialogData(
+            name = name,
+            riskLevel = level,
+            area = area,
+            riskDescription = data.get("riskDescription")?.asString ?: "该点位为园区危险源空间定位点，请结合现场底账核验风险状态。",
+            controlSuggestion = data.get("controlSuggestion")?.asString ?: "核对责任人、监测报警和应急物资，按风险等级落实巡检与闭环处置。"
+        )
+    }.getOrElse {
+        RiskPointDialogData("风险点", "待评估", "位置解析失败", "点位数据不完整", "请联系值班人员核验现场底账")
+    }
+}
+
+@Composable
+private fun RiskPointInfoLine(label: String, value: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
 }

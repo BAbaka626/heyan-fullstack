@@ -101,7 +101,7 @@ fun ParkBasicInfoTab(
         modifier = modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        BasicInfoColumn(
+        ParkOverviewSummary(
             enterprises = enterprises,
             riskStats = riskStats,
             modifier = Modifier
@@ -303,7 +303,7 @@ fun ParkDisposalTab(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun BasicInfoColumn(
+fun ParkOverviewSummary(
     enterprises: List<EnterpriseSummary>,
     riskStats: List<RiskLevelStat>,
     modifier: Modifier = Modifier
@@ -312,7 +312,6 @@ private fun BasicInfoColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text("园区概览", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         InfoLine("企业数量", "${enterprises.size} 家")
         InfoLine("化工企业", "${enterprises.count { it.is_chemical_enterprise == 1 }} 家")
         InfoLine("覆盖园区", enterprises.map { it.park_name }.filter { it.isNotBlank() }.distinct().joinToString("、").ifBlank { "待接入" })

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -59,41 +60,29 @@ fun EnterpriseScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val selectedRiskLevel by viewModel.selectedRiskLevel.collectAsState()
     val riskStats by viewModel.riskLevelStats.collectAsState()
-    val dailyReport by viewModel.dailyReport.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 windowInsets = WindowInsets(0, 0, 0, 0),
-                title = { Text("企业列表与园区看板") }
+                title = { Text("企业检索") }
             )
         }
     ) { innerPadding ->
-        Row(
+        EnterpriseListTabContent(
+            searchQuery = searchQuery,
+            enterprises = enterprises,
+            isLoading = isLoading,
+            errorMessage = errorMessage,
+            selectedRiskLevel = selectedRiskLevel,
+            riskStats = riskStats,
+            viewModel = viewModel,
+            onEnterpriseClick = onEnterpriseClick,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            EnterpriseListTabContent(
-                searchQuery = searchQuery,
-                enterprises = enterprises,
-                isLoading = isLoading,
-                errorMessage = errorMessage,
-                selectedRiskLevel = selectedRiskLevel,
-                riskStats = riskStats,
-                viewModel = viewModel,
-                onEnterpriseClick = onEnterpriseClick,
-                modifier = Modifier.weight(0.42f)
-            )
-            ParkStatusContainer(
-                enterprises = enterprises,
-                riskStats = riskStats,
-                report = dailyReport,
-                modifier = Modifier.weight(0.58f)
-            )
-        }
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        )
     }
 }
 
@@ -146,11 +135,12 @@ private fun EnterpriseListTabContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Row(
+        LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(end = 8.dp)
         ) {
-            riskStats.forEach { stat ->
+            items(riskStats, key = { it.levelCode }) { stat ->
                 RiskLevelFilterChip(
                     stat = stat,
                     selected = selectedRiskLevel == stat.levelCode,
@@ -158,8 +148,7 @@ private fun EnterpriseListTabContent(
                         viewModel.onRiskLevelSelected(
                             if (selectedRiskLevel == stat.levelCode) null else stat.levelCode
                         )
-                    },
-                    modifier = Modifier.weight(1f)
+                    }
                 )
             }
         }
@@ -263,13 +252,8 @@ private fun EnterpriseListItem(
     enterprise: EnterpriseSummary,
     onClick: () -> Unit
 ) {
-    val riskColor = when (enterprise.evaluation_level) {
-        "极高风险" -> Color(0xFFD32F2F)
-        "高风险" -> Color(0xFFF57C00)
-        "中风险" -> Color(0xFFFBC02D)
-        "低风险" -> Color(0xFF1976D2)
-        else -> Color.Gray
-    }
+    val risk = getEnterpriseRiskLevel(enterprise)
+    val riskColor = Color(android.graphics.Color.parseColor(risk.colorHex))
 
     Card(
         onClick = onClick,
@@ -312,7 +296,7 @@ private fun EnterpriseListItem(
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    text = enterprise.evaluation_level,
+                    text = risk.label,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = riskColor

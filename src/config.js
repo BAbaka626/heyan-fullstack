@@ -11,7 +11,7 @@ const openAiModel = process.env.OPENAI_MODEL || "";
 module.exports = {
   port: Number(process.env.PORT || 3100),
   dbPath: process.env.DB_PATH || path.resolve(__dirname, "..", "data", "chemical_ai.db"),
-  rootDir: path.resolve(__dirname, "..", ".."),
+  rootDir: path.resolve(__dirname, ".."),
   llmApiKey: deepSeekApiKey || openAiApiKey,
   llmBaseUrl: deepSeekBaseUrl || openAiBaseUrl || "https://api.deepseek.com",
   llmModel: deepSeekModel || openAiModel || "deepseek-v4-flash",

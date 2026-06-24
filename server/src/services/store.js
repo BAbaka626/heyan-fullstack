@@ -1,4 +1,5 @@
 const dayjs = require("dayjs");
+const { enrichEnterprisesRisk, evaluateEnterpriseRisk } = require("./riskEvaluation");
 
 function createId(prefix) {
   return `${prefix}-${dayjs().format("YYYYMMDDHHmmss")}-${Math.random().toString(36).slice(2, 8)}`;
@@ -10,9 +11,8 @@ function resolveEnterpriseCode(enterprise) {
 
 function listEnterprises(db, query = "") {
   const keyword = `%${String(query || "").trim()}%`;
-  return db.prepare(`
-    SELECT id, name, code, social_credit_code, park_name, address, legal_person, safety_leader,
-           employee_count, hazard_level, evaluation_level, is_chemical_enterprise
+  const rows = db.prepare(`
+    SELECT *
     FROM enterprises
     WHERE (? = '%%')
        OR name LIKE ?
@@ -24,10 +24,12 @@ function listEnterprises(db, query = "") {
     ORDER BY name
     LIMIT 100
   `).all(keyword, keyword, keyword, keyword, keyword, keyword, keyword);
+  return enrichEnterprisesRisk(rows);
 }
 
 function getEnterpriseDetail(db, id) {
-  const enterprise = db.prepare(`SELECT * FROM enterprises WHERE id = ?`).get(id);
+  const rawEnterprise = db.prepare(`SELECT * FROM enterprises WHERE id = ?`).get(id);
+  const enterprise = rawEnterprise ? evaluateEnterpriseRisk(rawEnterprise) : null;
   if (!enterprise) {
     return null;
   }
@@ -111,7 +113,7 @@ function getEnterpriseRiskProfile(db, id) {
     enterprise,
     summary: {
       riskScore: latestMetric?.risk_score || 0,
-      riskLevel: latestMetric?.risk_level || "未知",
+      riskLevel: enterprise.computedRiskLabel || latestMetric?.risk_level || "待评估",
       onlinePersonnel: latestMetric?.online_personnel || personnel.length || 0,
       activeAlarmCount: latestMetric?.active_alarm_count || 0,
       openIssueCount: latestMetric?.open_issue_count || openIssues,

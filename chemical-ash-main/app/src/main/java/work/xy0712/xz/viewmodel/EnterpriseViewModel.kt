@@ -20,6 +20,9 @@ import work.xy0712.xz.data.model.RiskLevelStat
 import work.xy0712.xz.data.model.WorkRecord
 import work.xy0712.xz.data.model.WorkRecordCreateRequest
 import work.xy0712.xz.data.repository.ChemicalRepository
+import work.xy0712.xz.ui.enterprise.EnterpriseRiskLevel
+import work.xy0712.xz.ui.enterprise.countEnterpriseRiskLevels
+import work.xy0712.xz.ui.enterprise.getEnterpriseRiskLevel
 
 class EnterpriseViewModel : ViewModel() {
 
@@ -32,6 +35,7 @@ class EnterpriseViewModel : ViewModel() {
     // Enterprises
     private val _enterprises = MutableStateFlow<List<EnterpriseSummary>>(emptyList())
     val enterprises: StateFlow<List<EnterpriseSummary>> = _enterprises.asStateFlow()
+    private var loadedEnterprises: List<EnterpriseSummary> = emptyList()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -73,21 +77,10 @@ class EnterpriseViewModel : ViewModel() {
 
     init {
         loadEnterprises()
-        loadRiskStats()
         loadDailyReport()
         loadInspectionData()
         loadIssues()
         loadWorkRecords()
-    }
-
-    private fun loadRiskStats() {
-        viewModelScope.launch {
-            try {
-                _riskLevelStats.value = repository.getRiskLevelStats()
-            } catch (e: Exception) {
-                android.util.Log.e("EnterpriseViewModel", "loadRiskStats failed", e)
-            }
-        }
     }
 
     fun loadDailyReport(date: String = "") {
@@ -113,21 +106,7 @@ class EnterpriseViewModel : ViewModel() {
 
     fun onRiskLevelSelected(levelCode: String?) {
         _selectedRiskLevel.value = levelCode
-        _searchQuery.value = ""
-        if (levelCode != null) {
-            viewModelScope.launch {
-                _isLoading.value = true
-                try {
-                    _enterprises.value = repository.getEnterprisesByRiskLevel(levelCode)
-                } catch (e: Exception) {
-                    _errorMessage.value = e.message ?: "筛选失败"
-                } finally {
-                    _isLoading.value = false
-                }
-            }
-        } else {
-            loadEnterprises()
-        }
+        applyRiskFilter()
     }
 
     fun loadEnterprises() {
@@ -136,13 +115,35 @@ class EnterpriseViewModel : ViewModel() {
             _errorMessage.value = null
             try {
                 val response = repository.getEnterprises(_searchQuery.value)
-                _enterprises.value = response.items
+                loadedEnterprises = response.items
+                updateRiskStats(loadedEnterprises)
+                applyRiskFilter()
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "加载企业列表失败"
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    private fun applyRiskFilter() {
+        val selected = _selectedRiskLevel.value
+        _enterprises.value = if (selected == null) {
+            loadedEnterprises
+        } else {
+            loadedEnterprises.filter { getEnterpriseRiskLevel(it).name == selected }
+        }
+    }
+
+    private fun updateRiskStats(source: List<EnterpriseSummary>) {
+        val counts = countEnterpriseRiskLevels(source)
+        _riskLevelStats.value = listOf(
+            RiskLevelStat(EnterpriseRiskLevel.EXTREME.name, EnterpriseRiskLevel.EXTREME.label, EnterpriseRiskLevel.EXTREME.colorHex, counts.extreme),
+            RiskLevelStat(EnterpriseRiskLevel.HIGH.name, EnterpriseRiskLevel.HIGH.label, EnterpriseRiskLevel.HIGH.colorHex, counts.high),
+            RiskLevelStat(EnterpriseRiskLevel.MEDIUM.name, EnterpriseRiskLevel.MEDIUM.label, EnterpriseRiskLevel.MEDIUM.colorHex, counts.medium),
+            RiskLevelStat(EnterpriseRiskLevel.LOW.name, EnterpriseRiskLevel.LOW.label, EnterpriseRiskLevel.LOW.colorHex, counts.low),
+            RiskLevelStat(EnterpriseRiskLevel.UNKNOWN.name, EnterpriseRiskLevel.UNKNOWN.label, EnterpriseRiskLevel.UNKNOWN.colorHex, counts.unknown)
+        )
     }
 
     fun selectEnterprise(id: String) {

@@ -1,5 +1,6 @@
+const path = require("path");
 const { createDb } = require("../src/db");
-const { rootDir } = require("../src/config");
+const { dbPath, rootDir } = require("../src/config");
 const { initSchema } = require("../src/schema");
 const {
   importAcceptanceWorkbook,
@@ -8,12 +9,27 @@ const {
   importSurveyWorkbookAsKnowledge,
 } = require("../src/services/etl");
 
-const db = createDb();
+function uniquePaths(paths) {
+  return Array.from(new Set(paths.map((item) => path.resolve(item))));
+}
 
-initSchema(db);
-importEnterpriseWorkbook(db, rootDir);
-importSurveyWorkbookAsKnowledge(db, rootDir);
-importAcceptanceWorkbook(db, rootDir);
-importDocuments(db, rootDir);
+function bootstrapDatabase(targetDbPath) {
+  const db = createDb(targetDbPath);
+  try {
+    initSchema(db);
+    importEnterpriseWorkbook(db, rootDir);
+    importSurveyWorkbookAsKnowledge(db, rootDir);
+    importAcceptanceWorkbook(db, rootDir);
+    importDocuments(db, rootDir);
+  } finally {
+    db.close();
+  }
 
-console.log("Bootstrap completed.");
+  console.log(`Bootstrap completed: ${targetDbPath}`);
+}
+
+uniquePaths([
+  dbPath,
+  path.resolve(rootDir, "data", "chemical_ai.db"),
+  path.resolve(rootDir, "server", "data", "chemical_ai.db"),
+]).forEach(bootstrapDatabase);
